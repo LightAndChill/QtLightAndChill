@@ -14,7 +14,8 @@ LightAndChill::LightAndChill(QWidget *parent) :
     ui(new Ui::LightAndChill),
     isEnabled(false),
     selected(0),
-    BANDS(BANDS_DEFAULT)
+    BANDS(BANDS_DEFAULT),
+    isComOpen(false)
 {
     ui->setupUi(this);
 
@@ -44,14 +45,14 @@ LightAndChill::LightAndChill(QWidget *parent) :
 
     QList<QSerialPortInfo> portList = QSerialPortInfo::availablePorts();
 
+    ui->serialList->addItem("Choose COM port");
+
     foreach(QSerialPortInfo port, portList)
     {
-        qDebug() << port.portName();
+        ui->serialList->addItem(port.portName());
     }
 
-    QSerialPort* serial = new QSerialPort;
-    serial->setPortName("COM1");
-    //serial->write();
+    connect(ui->serialList, SIGNAL(currentIndexChanged(QString)), this, SLOT(onComChange(QString)));
 }
 
 LightAndChill::~LightAndChill()
@@ -212,6 +213,14 @@ void LightAndChill::removeBar(int index)
     resize(width() - 20, height());
 }
 
+void LightAndChill::send(QString cmd)
+{
+    if (ui->serialEnabled->isChecked() && isComOpen)
+    {
+        serial->write(cmd.toLocal8Bit());
+    }
+}
+
 void LightAndChill::onBandsCountChange(int number)
 {
     if (number < 1)
@@ -261,7 +270,7 @@ void LightAndChill::onRequest(QHttpRequest* req, QHttpResponse* resp)
         if (command.compare("color", Qt::CaseInsensitive) == 0 && params.size() >= 4 && params[3] != "")
         {
             result = "Color command";
-            //serial->write(QString("1|color|%1|%2|%3").arg(params[1]).arg(params[2]).arg(params[3]));
+            send(QString("1|color|%1|%2|%3").arg(params[1]).arg(params[2]).arg(params[3]));
         }
         else
         {
@@ -277,4 +286,20 @@ void LightAndChill::onRequest(QHttpRequest* req, QHttpResponse* resp)
     resp->writeHead(200);
     resp->write(result.toLocal8Bit());
     resp->end();
+}
+
+void LightAndChill::onComChange(QString serailName)
+{
+    if (isComOpen)
+    {
+        serial->close();
+        serial->deleteLater();
+    }
+
+    serial = new QSerialPort(this);
+    serial->setPortName(serailName);
+    serial->setBaudRate(QSerialPort::Baud9600);
+    serial->open(QIODevice::ReadWrite);
+
+    isComOpen = true;
 }

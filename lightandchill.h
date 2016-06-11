@@ -43,12 +43,14 @@ private:
     int BANDS;
     QHttpServer* server;
     QSerialPort* serial;
+    bool isComOpen;
 
     void fillDevicesList();
     void initBass();
     void error(QString msg);
     void addBar(int index);
     void removeBar(int index);
+    void send(QString cmd);
 
 private slots:
     void onClickEnable();
@@ -57,6 +59,7 @@ private slots:
     void onBandsCountChange(int);
     void onLimitChange();
     void onRequest(QHttpRequest* req, QHttpResponse* resp);
+    void onComChange(QString);
 };
 
 #endif // LIGHTANDCHILL_H
