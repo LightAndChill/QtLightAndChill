@@ -18,6 +18,11 @@ namespace Ui {
 class LightAndChill;
 }
 
+class QHttpServer;
+class QHttpRequest;
+class QHttpResponse;
+class QSerialPort;
+
 class LightAndChill : public QWidget
 {
     Q_OBJECT
@@ -36,6 +41,8 @@ private:
     QVector<QRadioButton*> radioList;
     int selected;
     int BANDS;
+    QHttpServer* server;
+    QSerialPort* serial;
 
     void fillDevicesList();
     void initBass();
@@ -49,6 +56,7 @@ private slots:
     void onSelectedChange();
     void onBandsCountChange(int);
     void onLimitChange();
+    void onRequest(QHttpRequest* req, QHttpResponse* resp);
 };
 
 #endif // LIGHTANDCHILL_H

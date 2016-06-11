@@ -5,6 +5,10 @@
 #include <QMessageBox>
 #include <QtSerialPort/QtSerialPort>
 
+#include <qhttpserver/qhttpserver.h>
+#include <qhttpserver/qhttprequest.h>
+#include <qhttpserver/qhttpresponse.h>
+
 LightAndChill::LightAndChill(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::LightAndChill),
@@ -34,6 +38,10 @@ LightAndChill::LightAndChill(QWidget *parent) :
     fillDevicesList();
     initBass();
 
+    server = new QHttpServer(this);
+    connect(server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(onRequest(QHttpRequest*,QHttpResponse*)));
+    server->listen(QHostAddress::Any, 5555);
+
     QList<QSerialPortInfo> portList = QSerialPortInfo::availablePorts();
 
     foreach(QSerialPortInfo port, portList)
@@ -41,9 +49,9 @@ LightAndChill::LightAndChill(QWidget *parent) :
         qDebug() << port.portName();
     }
 
-    /*QSerialPort serial;
-    serial.setPortName("COM1");
-    serial.write();*/
+    QSerialPort* serial = new QSerialPort;
+    serial->setPortName("COM1");
+    //serial->write();
 }
 
 LightAndChill::~LightAndChill()
@@ -51,6 +59,8 @@ LightAndChill::~LightAndChill()
     BASS_WASAPI_Free();
     BASS_Free();
     delete ui;
+    server->deleteLater();
+    serial->deleteLater();
 }
 
 void LightAndChill::error(QString msg)
@@ -233,4 +243,38 @@ void LightAndChill::onLimitChange()
 {
     int limit = ui->limitSlider->value();
     qDebug() << limit;
+}
+
+void LightAndChill::onRequest(QHttpRequest* req, QHttpResponse* resp)
+{
+    QString path = req->path();
+    QStringList params = path.split("/");
+    params.removeFirst();
+
+    qDebug() << params;
+    QString result;
+
+    if (params.size() > 0)
+    {
+        QString command = params[0];
+
+        if (command.compare("color", Qt::CaseInsensitive) == 0 && params.size() >= 4 && params[3] != "")
+        {
+            result = "Color command";
+            //serial->write(QString("1|color|%1|%2|%3").arg(params[1]).arg(params[2]).arg(params[3]));
+        }
+        else
+        {
+            result = "Unknown command";
+        }
+    }
+    else
+    {
+        result = "No command";
+    }
+
+    resp->setHeader("Content-Length", QString::number(result.size()));
+    resp->writeHead(200);
+    resp->write(result.toLocal8Bit());
+    resp->end();
 }
