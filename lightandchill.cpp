@@ -41,7 +41,7 @@ LightAndChill::LightAndChill(QWidget *parent) :
 
     server = new QHttpServer(this);
     connect(server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(onRequest(QHttpRequest*,QHttpResponse*)));
-    server->listen(QHostAddress::Any, 5555);
+    server->listen(QHostAddress::Any, 80);
 
     QList<QSerialPortInfo> portList = QSerialPortInfo::availablePorts();
 
@@ -301,5 +301,17 @@ void LightAndChill::onComChange(QString serailName)
     serial->setBaudRate(QSerialPort::Baud9600);
     serial->open(QIODevice::ReadWrite);
 
+    connect(serial, SIGNAL(readyRead()), this, SLOT(onSerialReady()));
+
     isComOpen = true;
+}
+
+void LightAndChill::onSerialReady()
+{
+    qDebug() << "Serial chunk";
+
+    while (serial->canReadLine())
+    {
+        qDebug() << serial->readLine();
+    }
 }

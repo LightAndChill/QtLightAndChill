@@ -60,6 +60,7 @@ private slots:
     void onLimitChange();
     void onRequest(QHttpRequest* req, QHttpResponse* resp);
     void onComChange(QString);
+    void onSerialReady();
 };
 
 #endif // LIGHTANDCHILL_H
